@@ -20,6 +20,7 @@ func (tr *Transport) renderJsonRPC(outDir string) (err error) {
 	srcFile.ImportName(packageFiber, "fiber")
 	srcFile.ImportName(packageErrors, "errors")
 	srcFile.ImportName(packageContext, "context")
+	srcFile.ImportName(packageStrings, "strings")
 	srcFile.ImportName(packageZeroLog, "zerolog")
 	srcFile.ImportName(tr.tags.Value(tagPackageJSON, packageStdJSON), "json")
 
@@ -29,6 +30,12 @@ func (tr *Transport) renderJsonRPC(outDir string) (err error) {
 	srcFile.Add(tr.errorJsonRPC()).Line()
 	srcFile.Add(tr.jsonrpcResponsesTypeFunc())
 	srcFile.Add(batchJobType())
+	if tr.jsonRPCNeedsOverlay() {
+		srcFile.Add(tr.requestOverlayKeyType()).Line()
+		srcFile.Add(tr.requestOverlayStructType()).Line()
+		srcFile.Add(tr.requestOverlayGetMethod()).Line()
+		srcFile.Add(tr.requestOverlayFromFiberFunc())
+	}
 
 	srcFile.Line().Type().Id("methodJsonRPC").Func().Params(Id("userCtx").Qual(packageContext, "Context"), Id("ftx").Op("*").Qual(packageFiber, "Ctx"), Id("requestBase").Id("baseJsonRPC")).Params(Id("responseBase").Op("*").Id("baseJsonRPC"))
 	srcFile.Line().Add(tr.makeErrorResponseJsonRPCFunc())
@@ -189,6 +196,9 @@ func (tr *Transport) serveBatchFunc() Code {
 		Params(Id(_ctx_).Op("*").Qual(packageFiber, "Ctx")).Params(Id("err").Error()).BlockFunc(
 		func(bg *Group) {
 			bg.Line()
+			if tr.jsonRPCNeedsOverlay() {
+				bg.Add(setRequestOverlayContext())
+			}
 			bg.Var().Id("single").Bool()
 			bg.Var().Id("requests").Op("[]").Id("baseJsonRPC")
 			bg.Id("methodHTTP").Op(":=").Id(_ctx_).Dot("Method").Call()

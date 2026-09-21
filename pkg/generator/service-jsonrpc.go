@@ -88,18 +88,11 @@ func (svc *service) rpcMethodFunc(method *method, outDir string) Code {
 			ig.Return(Id("makeErrorResponseJsonRPC").Call(Id("requestBase").Dot("ID"), Id("parseError"), Lit("incorrect protocol version: ").Op("+").Id("requestBase").Dot("Version"), Nil()))
 		})
 		if method.hasFiberRequest() {
-			bg.If(Id("ftx").Op("!=").Nil()).Block(
-				Add(method.httpArgHeaders("ftx", func(arg, header string) *Statement {
-					return Line().If(Err().Op("!=").Nil()).Block(
-						Return(Id("makeErrorResponseJsonRPC").Call(Id("requestBase").Dot("ID"), Id("parseError"), Lit(fmt.Sprintf("http header '%s' could not be decoded: ", header)).Op("+").Err().Dot("Error").Call(), Nil())),
-					)
-				})),
-				Add(method.httpCookies("ftx", func(arg, header string) *Statement {
-					return Line().If(Err().Op("!=").Nil()).Block(
-						Return(Id("makeErrorResponseJsonRPC").Call(Id("requestBase").Dot("ID"), Id("parseError"), Lit(fmt.Sprintf("http header '%s' could not be decoded: ", header)).Op("+").Err().Dot("Error").Call(), Nil())),
-					)
-				})),
-			)
+			bg.Add(method.applyOverlayFromContext(func(arg, header string) *Statement {
+				return Line().If(Err().Op("!=").Nil()).Block(
+					Return(Id("makeErrorResponseJsonRPC").Call(Id("requestBase").Dot("ID"), Id("parseError"), Lit(fmt.Sprintf("http header '%s' could not be decoded: ", header)).Op("+").Err().Dot("Error").Call(), Nil())),
+				)
+			}))
 		}
 		bg.ListFunc(func(lg *Group) {
 			for _, ret := range method.resultsWithoutError() {
@@ -171,6 +164,9 @@ func (svc *service) serveMethodFunc() Code {
 		Params(Err().Error()).
 		BlockFunc(func(bg *Group) {
 			bg.Line()
+			if svc.jsonRPCNeedsOverlay() {
+				bg.Add(setRequestOverlayContext())
+			}
 			bg.Id("methodHTTP").Op(":=").Id(_ctx_).Dot("Method").Call()
 			bg.If(Id("methodHTTP").Op("!=").Qual(packageFiber, "MethodPost")).BlockFunc(func(ig *Group) {
 				ig.Id(_ctx_).Dot("Response").Call().Dot("SetStatusCode").Call(Qual(packageFiber, "StatusMethodNotAllowed"))
@@ -228,6 +224,9 @@ func (svc *service) serveBatchFunc() Code {
 		Params(Id(_ctx_).Op("*").Qual(packageFiber, "Ctx")).Params(Id("err").Error()).BlockFunc(
 		func(bg *Group) {
 			bg.Line()
+			if svc.jsonRPCNeedsOverlay() {
+				bg.Add(setRequestOverlayContext())
+			}
 			bg.Var().Id("single").Bool()
 			bg.Var().Id("requests").Op("[]").Id("baseJsonRPC")
 			bg.Id("methodHTTP").Op(":=").Id(_ctx_).Dot("Method").Call()
