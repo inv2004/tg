@@ -8,6 +8,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"iter"
 	"maps"
 	"os"
 	"path"
@@ -376,4 +377,14 @@ func sortedMapKeys[K cmp.Ordered, V any](m map[K]V) (result []K) {
 	result = slices.Collect(maps.Keys(m))
 	slices.Sort(result)
 	return
+}
+
+func sortedMapByKeys[K cmp.Ordered, V any](m map[K]V) iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for _, k := range sortedMapKeys(m) {
+			if !yield(k, m[k]) {
+				return
+			}
+		}
+	}
 }

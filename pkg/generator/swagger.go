@@ -119,9 +119,7 @@ services:
 
 			var parameters []swParameter
 			var retHeaders map[string]swHeader
-			varHeaderMap := method.varHeaderMap()
-			for _, argName := range sortedMapKeys(varHeaderMap) {
-				headerKey := varHeaderMap[argName]
+			for argName, headerKey := range sortedMapByKeys(method.varHeaderMap()) {
 				if arg := method.argByName(argName); arg != nil {
 					parameters = append(parameters, swParameter{
 						In:       "header",
@@ -139,9 +137,7 @@ services:
 					}
 				}
 			}
-			argPathMap := method.argPathMap()
-			for _, argName := range sortedMapKeys(argPathMap) {
-				headerKey := argPathMap[argName]
+			for argName, headerKey := range sortedMapByKeys(method.argPathMap()) {
 				if arg := method.argByName(argName); arg != nil {
 					parameters = append(parameters, swParameter{
 						In:       "path",
@@ -159,9 +155,7 @@ services:
 					}
 				}
 			}
-			argParamMap := method.argParamMap()
-			for _, argName := range sortedMapKeys(argParamMap) {
-				queryName := argParamMap[argName]
+			for argName, queryName := range sortedMapByKeys(method.argParamMap()) {
 				if arg := method.argByName(argName); arg != nil {
 					parameters = append(parameters, swParameter{
 						In:       "query",
@@ -171,9 +165,7 @@ services:
 					})
 				}
 			}
-			varCookieMap := method.varCookieMap()
-			for _, argName := range sortedMapKeys(varCookieMap) {
-				cookieName := varCookieMap[argName]
+			for argName, cookieName := range sortedMapByKeys(method.varCookieMap()) {
 				if arg := method.argByName(argName); arg != nil {
 					parameters = append(parameters, swParameter{
 						In:       "cookie",

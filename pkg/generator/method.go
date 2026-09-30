@@ -252,8 +252,7 @@ func (m *method) argFromString(typeName string, varMap map[string]string, strCod
 
 	block = Line()
 	if len(varMap) != 0 {
-		for _, argName := range sortedMapKeys(varMap) {
-			srcName := varMap[argName]
+		for argName, srcName := range sortedMapByKeys(varMap) {
 			argName = strings.TrimPrefix(argName, "!")
 			argTokens := strings.Split(argName, ".")
 			argName = argTokens[0]
@@ -303,10 +302,8 @@ func (m *method) argFromString(typeName string, varMap map[string]string, strCod
 func (m *method) httpRetHeaders(ftx string) (block *Statement) {
 
 	block = Line()
-	varHeaderMap := m.varHeaderMap()
-	if len(varHeaderMap) != 0 {
-		for _, ret := range sortedMapKeys(varHeaderMap) {
-			header := varHeaderMap[ret]
+	if len(m.varHeaderMap()) != 0 {
+		for ret, header := range sortedMapByKeys(m.varHeaderMap()) {
 			vArg := m.resultByName(ret)
 			if vArg == nil {
 				if m.argByName(ret) == nil {
